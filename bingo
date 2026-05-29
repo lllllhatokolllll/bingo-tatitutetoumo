@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ときなん盆踊りフェス ビンゴ</title>
+    <style>
+        :root {
+            --primary-color: #ff4757;
+            --accent-color: #ffa502;
+            --bg-color: #0a1128;
+            --card-bg: #1c2541;
+            --text-color: #ffffff;
+            --stamp-color: #1b264f; /* 手書き風の濃い紺色 */
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+            text-align: center;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#1c2541 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .header {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: linear-gradient(180deg, rgba(255,71,87,0.3) 0%, rgba(10,17,40,0) 100%);
+            border-radius: 0 0 20px 20px;
+        }
+        h1 {
+            font-size: 20px;
+            margin: 0 0 5px 0;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(255,165,2,0.5);
+        }
+        .date {
+            font-size: 13px;
+            color: #ddd;
+            margin: 0;
+        }
+        .instruction {
+            font-size: 14px;
+            background-color: rgba(255,255,255,0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .bingo-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 360px;
+            margin: 0 auto 20px auto;
+        }
+        .cell {
+            background-color: #ffffff; /* 文字が見えやすいように白背景に */
+            border: 2px solid #ccc;
+            border-radius: 12px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            box-sizing: border-box;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        ruby {
+            ruby-position: over;
+        }
+        rt {
+            font-size: 9px;
+            color: #555; /* 白背景に合わせて読みやすく */
+            letter-spacing: 0;
+            padding-bottom: 2px;
+        }
+        .cell-text {
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1.4;
+            color: #333333; /* 文字を濃いグレーにして視認性アップ */
+            word-break: break-all;
+            z-index: 1;
+        }
+        /* 枠内に押される手書き風の「済」スタンプ */
+        .stamp {
+            display: none;
+            position: absolute;
+            font-size: 42px; /* 枠いっぱいに表示 */
+            font-weight: 900;
+            color: var(--stamp-color);
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            border: 3px solid var(--stamp-color);
+            padding: 2px 10px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            transform: rotate(-15deg);
+            opacity: 0.85;
+            z-index: 2;
+            background-color: rgba(255,255,255,0.8); /* 文字の上に重なっても見やすいように */
+            animation: stamp-animation 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .cell.selected .stamp {
+            display: block;
+        }
+        @keyframes stamp-animation {
+            0% { transform: scale(2.5) rotate(-45deg); opacity: 0; }
+            100% { transform: scale(1) rotate(-15deg); opacity: 0.85; }
+        }
+
+        /* 🎬 ビンゴ達成時の全画面動画オーバーレイ */
+        .video-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        .video-overlay video {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+        }
+        .close-video-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        /* 結果・引き換え画面（動画が終わった後に表示） */
+        .result-screen {
+            display: none;
+            max-width: 360px;
+            margin: 20px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(255,71,87,0.4);
+            animation: slide-up 0.5s ease forwards;
+        }
+        @keyframes slide-up {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .result-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .prize-info {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .prize-info h3 {
+            margin: 0 0 8px 0;
+            color: var(--accent-color);
+            border-bottom: 1px dashed rgba(255,255,255,0.4);
+            padding-bottom: 4px;
+            font-size: 16px;
+        }
+        .staff-button {
+            margin-top: 15px;
+            background-color: #ffffff;
+            color: var(--primary-color);
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        .staff-button.used {
+            background-color: #888;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🏮 ときなん盆踊りフェス 🏮</h1>
+        <p class="date">〜夏祭りの夕べ〜</p>
+    </div>
+
+    <div class="instruction">
+        お祭りをたのしんで、マスをタップしよう！<br>1れつ そろったらクリア画面をスタッフにみせてね！
+    </div>
+
+    <div class="bingo-board" id="board"></div>
+
+    <div class="video-overlay" id="videoOverlay">
+        <button class="close-video-btn" onclick="closeVideo()">とじる</button>
+        <video id="clearVideo" playsinline>
+            <source src="clear.mp4" type="video/mp4">
+            お使いのブラウザは動画に対応していません。
+        </video>
+    </div>
+
+    <div class="result-screen" id="resultScreen">
+        <div class="result-title">🎆 ビンゴ！ 🎆</div>
+        <div class="prize-info">
+            <h3>🎁 けいひん引きかえ情報</h3>
+            <p><strong>ことば：</strong>クリアおめでとう！</p>
+            <p><strong>場所（ばしょ）：</strong>盆踊り受付（常盤南小学校）</p>
+            <p><strong>時間（じかん）：</strong>18時半 〜 20時まで</p>
+            <p><strong>けいひん：</strong>屋台（やたい）チケット<br><small>※先着（せんちゃく）200名さまだよ！いそごう！</small></p>
+        </div>
+        <button class="staff-button" id="staffBtn" onclick="claimPrize()">スタッフ確認ボタン（おさないでね）</button>
+    </div>
+
+    <script>
+        // ビンゴのマス目データ（ふりがな付き）
+        const items = [
+            '<ruby>舞台上<rt>ぶたいじょう</rt></ruby>に<ruby>上<rt>あ</rt></ruby>がって<br>たのしんだ',
+            '<ruby>絶対<rt>ぜったい</rt></ruby>に<br><ruby>来年<rt>らいねん</rt></ruby>も来る！！',
+            '加藤ふみあきさんを<br>みつけた！',
+            'オタゲーを<br>観た！',
+            '<ruby>中央<rt>ちゅうおう</rt></ruby>：とうもの会の<br>ゲームに<ruby>参加<rt>さんか</rt></ruby>した',
+            '<ruby>屋台<rt>やたい</rt></ruby>で<br>お買物をした',
+            '<ruby>盆踊<rt>ぼんおど</rt></ruby>りを<br>1<ruby>曲以上<rt>きょくいじょう</rt></ruby>おどった',
+            '<ruby>消防団<rt>しょうぼうだん</rt></ruby>の人に<br><ruby>挨拶<rt>あいさつ</rt></ruby>した',
+            学校の<br><ruby>先生<rt>せんせい</rt></ruby>に会った'
+        ];
+
+        const board = document.getElementById('board');
+        const resultScreen = document.getElementById('resultScreen');
+        const videoOverlay = document.getElementById('videoOverlay');
+        const clearVideo = document.getElementById('clearVideo');
+        const cells = [];
+        let isBingo = false;
+
+        // 3x3マスを生成
+        items.forEach((text, index) => {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            
+            const cellText = document.createElement('div');
+            cellText.classList.add('cell-text');
+            cellText.innerHTML = text;
+            cell.appendChild(cellText);
+
+            // 枠内に表示される「済」スタンプ
+            const stamp = document.createElement('div');
+            stamp.classList.add('stamp');
+            stamp.innerText = '済';
+            cell.appendChild(stamp);
+
+            cell.addEventListener('click', () => {
+                if(document.getElementById('staffBtn').classList.contains('used')) return;
+                
+                cell.classList.toggle('selected');
+                checkBingo();
+            });
+
+            board.appendChild(cell);
+            cells.push(cell);
+        });
+
+        // ビンゴ判定チェック
+        function checkBingo() {
+            if (isBingo) return;
+
+            const lines = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // 横
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // 縦
+                [0, 4, 8], [2, 4, 6]             // 斜め
+            ];
+
+            for (let line of lines) {
+                if (cells[line[0]].classList.contains('selected') &&
+                    cells[line[1]].classList.contains('selected') &&
+                    cells[line[2]].classList.contains('selected')) {
+                    
+                    showBingoSuccess();
+                    break;
+                }
+            }
+        }
+
+        // ビンゴ達成時：全画面で動画を再生
+        function showBingoSuccess() {
+            isBingo = true;
+            videoOverlay.style.display = 'flex';
+            
+            // スマホでの自動再生対策を含めて動画を再生
+            clearVideo.muted = true; // 音声付き動画の場合はスマホの制限を避けるためミュートで開始
+            clearVideo.play().catch(e => console.log("動画再生エラー:", e));
+
+            // 動画が最後まで再生されたら自動で閉じて引き換え画面へ
+            clearVideo.onended = function() {
+                closeVideo();
+            };
+        }
+
+        // 動画を閉じて引き換え情報を表示
+        function closeVideo() {
+            clearVideo.pause();
+            videoOverlay.style.display = 'none';
+            resultScreen.style.display = 'block';
+            resultScreen.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // スタッフ用引き換えボタン
+        function claimPrize() {
+            if (confirm('【スタッフ専用】本当に景品と引き換えますか？（引き換えると元に戻せません）')) {
+                const btn = document.getElementById('staffBtn');
+                btn.innerText = '引き換え済み（ひきかえずみ）';
+                btn.classList.add('used');
+                btn.disabled = true;
+            }
+        }
+    </script>
+</body>
+</html>
